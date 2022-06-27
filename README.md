@@ -2,7 +2,7 @@
 
 **Installation**
 
-`curl https://github.com/sudo-Tiz/awesome-.bashrc/-/raw/main/install.sh | bash`
+`curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash`
 
 **Usage**
 
