@@ -300,7 +300,7 @@ alias whoisonlan='nmap -sn 192.168.1.0/24 |grep "report for"| awk '\''{print $5"
 # Show open ports
 alias openports='sudo netstat -tunlp | grep LISTEN'
 # Show to command to install my bashrc and copy it to the clipboard
-alias showmybashrc='echo "curl https://gitlab.u-angers.fr/mathis/awesome-.bashrc/-/raw/main/install.sh | bash"; echo "curl https://gitlab.u-angers.fr/mathis/awesome-.bashrc/-/raw/main/install.sh | bash"|xclip'
+alias showmybashrc='echo "curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash"; echo "curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash"|xclip'
 # Wsl
 alias windaube='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
 #show folder size
