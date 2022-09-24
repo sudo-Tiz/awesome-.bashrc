@@ -11,8 +11,8 @@ esac
 ##############################################################################################
 IWantToReplaceLsWithExa=1
 IWantToPrintTheNumberOfFilesWhenLs=1
-IWantToReplaceCatWithBat=0
-IWantToReplaceLessWithVimLess=0
+IWantToReplaceCatWithBat=1
+IWantToReplaceLessWithVimLess=1
 ######################################## USEFUL SHIT  ########################################
 # append to the history file, don't overwrite it
 shopt -s histappend
@@ -41,6 +41,8 @@ shopt -s globstar
 # Readline used by Bash 4.)
 set skip-completed-text on
 
+# Autoriser le cd'ing sans taper la partie cd si la version bash> = 4
+[ ${BASH_VERSINFO[0]} -ge 4 ] && shopt -s autocd
 
 
 # make less more friendly for non-text input files, see lesspipe(1)
@@ -79,6 +81,13 @@ xterm* | rxvt*)
   ;;
 *) ;;
 esac
+
+
+# change prompt
+alias ps1mple='export PS1="\$" PROMPT_COMMAND=""'
+alias ps1ong="load_prompt"
+
+
 ######################################## COLOR ###############################################
 export LESS_TERMCAP_mb=$'\E[01;31m'
 export LESS_TERMCAP_md=$'\E[01;31m'
@@ -173,7 +182,6 @@ if [ $IWantToReplaceLsWithExa -eq 1 ]; then
   alias lla='nbf && exa --sort extension  -laF' # show hidden files
   alias lt='nbf && exa -T'
   alias ltl='nbf && exa -Tl'
-  alias lss='nbf && exa --sort size -l' # sort by size
   alias lll='/usr/bin/clear && nbf && exa --sort extension  -l'
 else
   # Keep using ls
@@ -192,6 +200,15 @@ else
   alias lf="nbf && ls -l | egrep -v '^d'" # files only
   alias ldir="nbf && ls -l | egrep '^d'"  # directories only
 fi
+#show folder size
+alias dush="du -sh"
+lss() {
+  if [ -d "$1" ]; then
+    du -h --max-depth=1 . 2>/dev/null | sort -rh
+  else
+    du -h --max-depth=1 $1 2>/dev/null | sort -rh
+  fi
+}
 
 ########################################   CAT   ########################################
 if [ $IWantToReplaceCatWithBat -eq 1 ]; then
@@ -221,11 +238,11 @@ alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias cdde='cd ~/Bureau && /usr/bin/clear && /usr/bin/ls'
 alias cdd='cd ~/Documents && /usr/bin/clear && /usr/bin/ls'
-alias dl='cd ~/Téléchargements && /usr/bin/clear && /usr/bin/ls'
+alias mdtemp='cd `mktemp -d`'
 # mkdir + cd
 md() { [ $# = 1 ] && mkdir -p "$@" && cd "$@" || echo "Error - no directory passed!"; }
-# Autoriser le cd'ing sans taper la partie cd si la version bash> = 4
-[ ${BASH_VERSINFO[0]} -ge 4 ] && shopt -s autocd
+#cd + ls
+cl() { DIR="$*"; if [ $# -lt 1 ]; then DIR=$HOME; fi; builtin cd "${DIR}" && l;}
 ######################################## DOCKER ########################################
 alias doc='/bin/docker'
 alias doco='/bin/docker-compose'
@@ -245,7 +262,6 @@ alias gommit='git commit -m'
 alias gadd='git add'
 ########################################  FAST  ########################################
 alias vi='vim'
-alias c='/usr/bin/clear'
 alias ee='exit'
 alias code.='code . && exit'
 alias coba='code ~/.bashrc'
@@ -256,37 +272,32 @@ alias tree='tree -CAhF --dirsfirst'
 alias cp='cp -r'
 alias rmrf='rm  --recursive --force --verbose '
 alias rm='rm -rf'
+alias copypaste='xclip -selection clipboard'
 alias rmhistory='echo "" >> ~/.bash'
-######################################## OTHERS ########################################
-# Chmod
+alias h="history | grep "
+alias f="find . | grep "
+######################################## CHMOD ########################################
 alias 000='chmod -R 000'
 alias 644='chmod -R 644'
 alias 666='chmod -R 666'
 alias 744='chmod -R 744'
 alias 755='chmod -R 755'
 alias 777='chmod -R 777'
-# Copy progress bar
-alias cpv='rsync -ah --info=progress2'
-alias mvv='rsync -ah --remove-source-files --info=progress2'
-# Search command line history
-alias h="history | grep "
-# Search files in the current folder
-alias f="find . | grep "
-# Count all files (recursively) in the current folder
-alias countfiles="for t in files links directories; do echo \`find . -type \${t:0:1} | /bin/wc -l\` \$t; done 2> /dev/null"
-# Python creation d'envorinement
+###################################### PYTHON ENV ######################################
 alias ve='virtualenv ./.env'
 alias va='source ./.env/bin/activate || source ./env/bin/activate'
 alias vave='virtualenv ./.env && source ./.env/bin/activate'
 alias da='deactivate'
-# Add an "alert" alias for long running commands.  Use like so:  sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-# Micro to speaker
-alias micON='pactl load-module module-loopback latency_msec=1'
-alias micOFF='pactl unload-module module-loopback'
+######################################## INFOS ########################################
+# Show who is on lan
+alias whoisonlan='nmap -sn 192.168.1.0/24 |grep "report for"| awk '\''{print $5" -> " $6}'\'' '
+# Show open ports
+alias openports='sudo netstat -tunlp | grep LISTEN'
+# Show to command to install my bashrc and copy it to the clipboard
+alias showmybashrc='echo "curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash"; echo "curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash"|xclip'
 # Info
-alias linfo='free -h && echo "disk" && echo &&  df -h && echo "network" && echo && ip a'
-# Rotate screen
+alias linfo='free -h && echo "disk" && echo &&  df -h && echo "network" && echo && ip a && du -h --max-depth=1 . | sort -rh'
+###################################### SCREEN ROTATION ######################################
 if [ $(dpkg-query -W -f='${Status}' libxrandr2 2>/dev/null | grep -c "ok installed") -eq 1 ] && [ $(dpkg-query -W -f='${Status}' x11-xserver-utils 2>/dev/null | grep -c "ok installed") -eq 1 ]  ; then
   alias xrandrright="xrandr --output $(xrandr | grep "connected primary" | awk '{print $1}') --rotate right"
   alias xrandrnormal="xrandr --output $(xrandr | grep "connected primary" | awk '{print $1}') --rotate normal"
@@ -295,23 +306,21 @@ if [ $(dpkg-query -W -f='${Status}' libxrandr2 2>/dev/null | grep -c "ok install
   alias xrandr120="xrandr --output $(xrandr | grep "connected primary" | awk '{print $1}') --mode 1920x1080 --rate 120"
   alias xrandr48="xrandr --output $(xrandr | grep "connected primary" | awk '{print $1}') --mode 1920x1080 --rate 48"
 fi
-# Show who is on lan
-alias whoisonlan='nmap -sn 192.168.1.0/24 |grep "report for"| awk '\''{print $5" -> " $6}'\'' '
-# Show open ports
-alias openports='sudo netstat -tunlp | grep LISTEN'
-# Show to command to install my bashrc and copy it to the clipboard
-alias showmybashrc='echo "curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash"; echo "curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash"|xclip'
+######################################## OTHERS ########################################
+# Copy progress bar
+alias cpv='rsync -ah --info=progress2'
+alias mvv='rsync -ah --remove-source-files --info=progress2'
+# Count all files (recursively) in the current folder
+alias countfiles="for t in files links directories; do echo \`find . -type \${t:0:1} | /bin/wc -l\` \$t; done 2> /dev/null"
+# Add an "alert" alias for long running commands.  Use like so:  sleep 10; alert
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+# Micro to speaker
+alias micON='pactl load-module module-loopback latency_msec=1'
+alias micOFF='pactl unload-module module-loopback'
 # Wsl
 alias windaube='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
-#show folder size
-alias dush="du -sh"
-# change prompt
-alias ps1mple='export PS1="\$" PROMPT_COMMAND=""'
-alias ps1ong="load_prompt"
 
-###########################################################################################
-######################################## FUNCTIONS ########################################
-###########################################################################################
+# Open in explorer
 alias exp.='exp . ; exit'
 exp() {
   if [ -d "$1" ]; then
@@ -321,7 +330,11 @@ exp() {
   fi
 }
 
-#rajoute la fonction extract qui unzip tout
+#Computes a math calculation
+c() { printf "%s\n" "$*" | bc; }
+
+
+#Extract everything
 extract() {
   if [ -f "$1" ]; then
     case "$1" in
@@ -347,17 +360,9 @@ extract() {
   fi
 }
 
-mitmcert(){
-  adb root && adb remount && FILENAME=$(openssl x509 -inform PEM -subject_hash_old -in /tmp/mitmproxy/mitmproxy-ca-cert.cer | head -1).0 && cp /tmp/mitmproxy/mitmproxy-ca-cert.cer $FILENAME && adb push $FILENAME /system/etc/security/cacerts && adb shell "chmod 664 /system/etc/security/cacerts/$FILENAME" && adb reboot && adb wait-for-device
-}
-
-devmod() {
-  if [ $(gsettings get org.gnome.desktop.background picture-uri) == \'file:///usr/share/backgrounds/1.jpeg\' ]; then
-    gsettings set org.gnome.desktop.background picture-uri file:///usr/share/backgrounds/2.jpeg
-  else
-    gsettings set org.gnome.desktop.background picture-uri file:///usr/share/backgrounds/1.jpeg
-  fi
-}
+# Encryption
+aes256cbc() { [ $# = 2 ] && openssl aes-256-cbc -salt -pbkdf2 -in $1 -out $2 || echo "ERROR";  }
+aes256cbc_d() { [ $# = 2 ] && openssl aes-256-cbc -salt -pbkdf2 -d -in $1 -out $2 || echo "ERROR";  }
 
 # Searches for text in all files in the current folder
 ftext() {
@@ -371,30 +376,12 @@ ftext() {
   grep -iIHrn --color=always "$1" . | less -r
 }
 
-#cd + ls
-function cl() {
-  DIR="$*"
-  # if no DIR given, go home
-  if [ $# -lt 1 ]; then
-    DIR=$HOME
-  fi
-  builtin cd "${DIR}" &&
-    # use your preferred ls command
-    /usr/bin/ls -F --color=auto
-}
-
-#Computes a math calculation
-#Usage: c 1+1
-c() {
-  printf "%s\n" "$*" | bc
-}
-
-victoire() {
+victory() {
   echo "
 mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
 mmmmmmmmm=================================================mmmmmmmmmm
 mmmmmmmm/                                                  \mmmmmmmm
-mmmmmmmm\     $1 is the fucking winner !                  /mmmmmmmm
+mmmmmmmm\     $1 is the fucking winner !                  /mmmmmmmmm
 mmmmmmmmm=================================================mmmmmmmmmm
 mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
 mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
