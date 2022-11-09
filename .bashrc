@@ -13,6 +13,9 @@ IWantToReplaceLsWithExa=1
 IWantToPrintTheNumberOfFilesWhenLs=1
 IWantToReplaceCatWithBat=1
 IWantToReplaceLessWithVimLess=1
+
+IWantToInstallMyFavouriteApp=1
+ListOfFavoriteApp="vim terminator mlocate tree"
 ######################################## USEFUL SHIT  ########################################
 # append to the history file, don't overwrite it
 shopt -s histappend
@@ -119,7 +122,7 @@ if ! shopt -oq posix; then
     . /etc/bash_completion
   fi
 fi
-######################################## IMPORT ##############################################
+######################################## IMPORT #############################################
 
 if [ -e $HOME/.bash_alias ]; then
   source $HOME/.bash_alias
@@ -131,16 +134,12 @@ if [ -e $HOME/.bash_personnal ]; then
   source $HOME/.bash_personnal
 fi
 
-##############################################################################################
-######################################## ALIASES #############################################
-##############################################################################################
-alias helpme="grep --color=always ALIASES ~/.bashrc -A100000 | less"
-
+######################################## SUDO ##############################################
 if [ $(id -u) -eq 0 ]; then #remove sudo
   alias sudo=''
 fi
 
-#######################################  LS    ############################################
+######################################## PRESET ############################################
 if [ $IWantToPrintTheNumberOfFilesWhenLs -eq 1 ]; then
   nbf() {
     nbvisiblefiles=$(/usr/bin/ls $1 | /bin/wc -l)
@@ -149,6 +148,27 @@ if [ $IWantToPrintTheNumberOfFilesWhenLs -eq 1 ]; then
     echo -e "     \033[1;34m[$nbvisiblefiles files\033[1;37m|$nbhiddenfiles hidden|\033[1;31m$nbtotalfiles total]"
   }
 fi
+if [ $IWantToReplaceCatWithBat -eq 1 ]; then
+  if [ $(dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    echo replacing cat with bat && sudo /bin/apt -qq update && sudo /bin/apt -qq upgrade -y && sudo /bin/apt -qq install bat -y
+  fi
+  alias cat="batcat --paging=never -pp --style='plain' --theme=TwoDark "
+fi
+if [ $IWantToReplaceLessWithVimLess -eq 1 ]; then
+  if [ $(dpkg-query -W -f='${Status}' vim 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    echo download vim and replacing less with vimless && sudo /bin/apt -qq update && sudo /bin/apt -qq upgrade -y && sudo /bin/apt -qq install vim -y
+  fi
+  alias less="/usr/share/vim/vim*/macros/less.sh"
+fi
+if [ $IWantToInstallMyFavouriteApp -eq 1 ]; then
+for a in $ListOfFavoriteApp; do
+  if [ $(dpkg-query -W -f='${Status}' $a 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+  sudo /bin/apt -qq update && sudo /bin/apt -qq upgrade -y 
+    echo download $a 
+    sudo /bin/apt -qq install $a -y
+  fi
+done
+fi
 
 if [ $IWantToReplaceLsWithExa -eq 1 ]; then
   export EXA_COLORS="di=1;32"
@@ -156,7 +176,17 @@ if [ $IWantToReplaceLsWithExa -eq 1 ]; then
   #if not exist,  download exa
   if [ ! -e /bin/exa ] && [ ! -e /usr/bin/exa ] && [ ! -e /usr/local/bin/exa ]; then
     echo replacing ls by exa
-    #TODO ask if u wan't
+    
+    while true; do
+      read -p "Do you wish to install EXA ? " yn
+      case $yn in
+          [Yy]* ) make install; break;;
+          [Nn]* ) exit;;
+          * ) echo "Please answer yes or no.";;
+      esac
+    done
+
+
     if [ $(echo "$(lsb_release -rs 2>/dev/null) >= 20.10" | bc -l 2>/dev/null) -eq 1 ] 2>/dev/null; then
       sudo apt install exa
     else
@@ -200,6 +230,15 @@ else
   alias lf="nbf && ls -l | egrep -v '^d'" # files only
   alias ldir="nbf && ls -l | egrep '^d'"  # directories only
 fi
+
+
+
+
+##############################################################################################
+######################################## ALIASES #############################################
+##############################################################################################
+alias helpme="grep --color=always ALIASES ~/.bashrc -A100000 | less"
+
 #show folder size
 alias dush="du -sh"
 lss() {
@@ -209,21 +248,6 @@ lss() {
     du -h --max-depth=1 $1 2>/dev/null | sort -rh
   fi
 }
-
-########################################   CAT   ########################################
-if [ $IWantToReplaceCatWithBat -eq 1 ]; then
-  if [ $(dpkg-query -W -f='${Status}' bat 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-    echo replacing cat with bat && sudo /bin/apt -qq update && sudo /bin/apt -qq upgrade -y && sudo /bin/apt -qq install bat -y
-  fi
-  alias cat="batcat --paging=never -pp --style='plain' --theme=TwoDark "
-fi
-
-if [ $IWantToReplaceLessWithVimLess -eq 1 ]; then
-  if [ $(dpkg-query -W -f='${Status}' vim 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-    echo download vim and replacing less with vimless && sudo /bin/apt -qq update && sudo /bin/apt -qq upgrade -y && sudo /bin/apt -qq install vim -y
-  fi
-  alias less="/usr/share/vim/vim*/macros/less.sh"
-fi
 
 ########################################   APT   ########################################
 alias sagi='sudo /bin/apt-get install'
@@ -237,6 +261,7 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias cdde='cd ~/Bureau && /usr/bin/clear && /usr/bin/ls'
+alias cddp='cd ~/Documents/programmation && /usr/bin/clear && /usr/bin/ls'
 alias cdd='cd ~/Documents && /usr/bin/clear && /usr/bin/ls'
 alias mdtemp='cd `mktemp -d`'
 # mkdir + cd
@@ -244,22 +269,25 @@ md() { [ $# = 1 ] && mkdir -p "$@" && cd "$@" || echo "Error - no directory pass
 #cd + ls
 cl() { DIR="$*"; if [ $# -lt 1 ]; then DIR=$HOME; fi; builtin cd "${DIR}" && l;}
 ######################################## DOCKER ########################################
-alias doc='/bin/docker'
-alias doco='/bin/docker-compose'
-alias rmdoc='/bin/docker rm -f $(/bin/docker ps -a -q)'
+alias doc='sudo /bin/docker'
+alias doco='sudo /bin/docker-compose'
+alias rmdoc='sudo /bin/docker rm -f $(/bin/docker ps -a -q)'
 # Containers
-alias mitmproxy='docker run --rm -it -v /tmp/mitmproxy:/home/mitmproxy/.mitmproxy -p 192.168.1.33:8080:8080 -p 127.0.0.1:8081:8081 mitmproxy/mitmproxy:6.0.2 mitmweb --showhost --web-host 0.0.0.0 --anticache'
-alias cordova='docker run -it beevelop/cordova bash'
-alias zphisher='/bin/docker run --rm --net host -p 8080:8080 -it htrtech/zphisher'
-alias startlamp='/bin/docker run -v ~/programmation/docker/lamp/www:/var/www/html -v ~/programmation/docker/lamp/mysql:/var/lib/mysql -p 80:80 -p 3306:3306 --rm lioshi/lamp:php5'
-alias startvnc='/bin/docker run --name linVNC -p 6080:80 -p 5900:5900 dorowu/ubuntu-desktop-lxde-vnc:bionic'
-alias startbeef='/bin/docker run --rm -p 3000:3000 janes/beef'
+alias mitmproxy='sudo /bin/docker run --rm -it -v /tmp/mitmproxy:/home/mitmproxy/.mitmproxy -p 192.168.1.33:8080:8080 -p 127.0.0.1:8081:8081 mitmproxy/mitmproxy:6.0.2 mitmweb --showhost --web-host 0.0.0.0 --anticache'
+alias cordova='sudo /bin/docker run -it beevelop/cordova bash'
+alias zphisher='sudo /bin/docker run --rm --net host -p 8080:8080 -it htrtech/zphisher'
+alias startlamp='sudo /bin/docker run -v ~/programmation/docker/lamp/www:/var/www/html -v ~/programmation/docker/lamp/mysql:/var/lib/mysql -p 80:80 -p 3306:3306 --rm lioshi/lamp:php5'
+alias startvnc='sudo /bin/docker run --name linVNC -p 6080:80 -p 5900:5900 dorowu/ubuntu-desktop-lxde-vnc:bionic'
+alias startbeef='sudo /bin/docker run --rm -p 3000:3000 janes/beef'
 ######################################## GIT ########################################
 alias glone='git clone'
 alias gull='git pull'
 alias gush='git push'
 alias gommit='git commit -m'
 alias gadd='git add'
+alias gradd='git restore --staged'
+alias gremouve='git remove'
+alias gatus='git status'
 ########################################  FAST  ########################################
 alias vi='vim'
 alias ee='exit'
@@ -276,6 +304,7 @@ alias copypaste='xclip -selection clipboard'
 alias rmhistory='echo "" >> ~/.bash'
 alias h="history | grep "
 alias f="find . | grep "
+
 ######################################## CHMOD ########################################
 alias 000='chmod -R 000'
 alias 644='chmod -R 644'
@@ -286,17 +315,18 @@ alias 777='chmod -R 777'
 ###################################### PYTHON ENV ######################################
 alias ve='virtualenv ./.env'
 alias va='source ./.env/bin/activate || source ./env/bin/activate'
-alias vave='virtualenv ./.env && source ./.env/bin/activate'
+alias veva='virtualenv ./.env && source ./.env/bin/activate'
 alias da='deactivate'
 ######################################## INFOS ########################################
-# Show who is on lan
-alias whoisonlan='nmap -sn 192.168.1.0/24 |grep "report for"| awk '\''{print $5" -> " $6}'\'' '
-# Show open ports
-alias openports='sudo netstat -tunlp | grep LISTEN'
 # Show to command to install my bashrc and copy it to the clipboard
 alias showmybashrc='echo "curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash"; echo "curl https://raw.githubusercontent.com/sudo-Tiz/awesome-.bashrc/master/install.sh | bash"|xclip'
-# Info
-alias linfo='free -h && echo "disk" && echo &&  df -h && echo "network" && echo && ip a && du -h --max-depth=1 . | sort -rh'
+alias showdisk='free -h && echo "disk" && echo &&  df -h && du -h --max-depth=1 . | sort -rh'
+
+alias shownetwork='echo "---LSOF---"; sudo lsof -nP -i; echo "---SS---"; sudo ss -atupn; echo "---NETSTAT---"; sudo netstat -atupen'
+showlan() { nmap -sL 192.168.1.0/24 | grep '(' |tail -n +2 | tail -n +2 | head -n -1 | awk {'print $5 " -> " $6'} | column -t; }
+
+
+
 ###################################### SCREEN ROTATION ######################################
 if [ $(dpkg-query -W -f='${Status}' libxrandr2 2>/dev/null | grep -c "ok installed") -eq 1 ] && [ $(dpkg-query -W -f='${Status}' x11-xserver-utils 2>/dev/null | grep -c "ok installed") -eq 1 ]  ; then
   alias xrandrright="xrandr --output $(xrandr | grep "connected primary" | awk '{print $1}') --rotate right"
@@ -320,6 +350,8 @@ alias micOFF='pactl unload-module module-loopback'
 # Wsl
 alias windaube='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
 
+
+
 # Open in explorer
 alias exp.='exp . ; exit'
 exp() {
@@ -332,6 +364,10 @@ exp() {
 
 #Computes a math calculation
 c() { printf "%s\n" "$*" | bc; }
+
+pdftojpg(){
+  [ $# = 1 ] && convert -density 150 "$1" -quality 90 "`echo $1| sed s/.pdf/%03d.jpg/g`" || echo ERROR
+}
 
 
 #Extract everything
@@ -375,6 +411,14 @@ ftext() {
   # optional: -l only print filenames and not the matching lines ex. grep -irl "$1" *
   grep -iIHrn --color=always "$1" . | less -r
 }
+
+#text to speach using espeak + mbrola
+#saythis() {  [ $# = 1 ] && echo $1 | espeak -v mb/mb-fr4  --pho | mbrola /usr/share/mbrola/fr4 - -.au | aplay || echo "ERROR";}
+#text to speach using picotts
+if [ $(dpkg-query -W -f='${Status}' libttspico-utils 2>/dev/null | grep -c "ok installed") -eq 1 ]; then
+saythis() {  [ $# = 1 ] && MY_TEMP=`mktemp` && MY_TEMP_WAV=$MY_TEMP".wav" && mv $MY_TEMP $MY_TEMP_WAV &&  pico2wave -l fr-FR -w $MY_TEMP_WAV "$1" &&  aplay $MY_TEMP_WAV && rm $MY_TEMP_WAV || echo "ERROR";}
+fi
+
 
 victory() {
   echo "
